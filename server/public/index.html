@@ -1,70 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>SongDNA Upload</title>
+  <meta charset="UTF-8">
+  <title>SongDNA Studio</title>
 </head>
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
 
-  <h1>SongDNA Studio 🎧</h1>
+<h1>SongDNA Studio 🎧</h1>
 
-  <input type="file" id="fileInput" />
-  <br /><br />
+<input type="file" id="fileInput"><br><br>
 
-  <button onclick="upload()">Upload</button>
-  <button onclick="extract()">Extract DNA</button>
+<button onclick="upload()">Upload</button>
+<button onclick="extract()">Extract DNA</button>
+<button onclick="generate()">Generate Variation</button>
 
-  <pre id="result"></pre>
+<pre id="result"></pre>
 
-  <script>
-    let lastFileUrl = "";
+<script>
+let lastFileUrl = "";
+let currentDNA = null;
 
-    async function upload() {
-      const fileInput = document.getElementById("fileInput");
-      const file = fileInput.files[0];
+async function upload() {
+  const file = document.getElementById("fileInput").files[0];
+  const formData = new FormData();
+  formData.append("file", file);
 
-      if (!file) {
-        alert("בחר קובץ קודם");
-        return;
-      }
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData
+  });
 
-      const formData = new FormData();
-      formData.append("file", file);
+  const data = await res.json();
+  lastFileUrl = data.fileUrl;
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
+  document.getElementById("result").innerText =
+    "UPLOAD:\n" + JSON.stringify(data, null, 2);
+}
 
-      const data = await res.json();
-      lastFileUrl = data.fileUrl;
+async function extract() {
+  const res = await fetch("/api/dna/extract", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fileUrl: lastFileUrl })
+  });
 
-      document.getElementById("result").innerText =
-        "Upload:\n" + JSON.stringify(data, null, 2);
-    }
+  const data = await res.json();
+  currentDNA = data.dna;
 
-    async function extract() {
-      if (!lastFileUrl) {
-        alert("תעלה קובץ קודם");
-        return;
-      }
+  document.getElementById("result").innerText =
+    "DNA:\n" + JSON.stringify(data, null, 2);
+}
 
-      const res = await fetch("/api/dna/extract", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          fileUrl: lastFileUrl
-        })
-      });
+async function generate() {
+  const res = await fetch("/api/variation/generate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      dna: currentDNA,
+      similarity: 60,
+      type: "club"
+    })
+  });
 
-      const data = await res.json();
+  const data = await res.json();
 
-      document.getElementById("result").innerText =
-        "DNA:\n" + JSON.stringify(data, null, 2);
-    }
-  </script>
+  document.getElementById("result").innerText =
+    "VARIATION:\n" + JSON.stringify(data, null, 2);
+}
+</script>
 
 </body>
 </html>
