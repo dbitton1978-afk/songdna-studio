@@ -26,89 +26,76 @@
   <script>
     let currentDNA = null;
 
-    // 🔼 Upload file
+    // 🔼 Upload
     async function upload() {
-      try {
-        const fileInput = document.getElementById("fileInput");
+      const fileInput = document.getElementById("fileInput");
 
-        if (!fileInput.files.length) {
-          alert("בחר קובץ קודם");
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await res.json();
-
-        console.log("UPLOAD:", data);
-        document.getElementById("result").textContent =
-          JSON.stringify(data, null, 2);
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById("result").textContent = "Upload Error ❌";
+      if (!fileInput.files.length) {
+        alert("בחר קובץ קודם");
+        return;
       }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      document.getElementById("result").textContent =
+        JSON.stringify(data, null, 2);
     }
 
     // 🧬 Extract DNA
     async function extract() {
-      try {
-        document.getElementById("result").textContent = "Extracting... ⏳";
+      document.getElementById("result").textContent = "Loading DNA...";
 
-        const res = await fetch("/api/dna");
-        const data = await res.json();
+      const res = await fetch("/api/dna");
+      const data = await res.json();
 
-        currentDNA = data.dna;
-
-        console.log("DNA:", data);
-
-        document.getElementById("result").textContent =
-          JSON.stringify(data, null, 2);
-
-      } catch (err) {
-        console.error(err);
+      if (!data.success) {
         document.getElementById("result").textContent = "DNA Error ❌";
+        return;
       }
+
+      currentDNA = data.dna;
+
+      document.getElementById("result").textContent =
+        JSON.stringify(data, null, 2);
     }
 
-    // 🔥 Generate Variation
+    // 🔥 Generate Variation (AI)
     async function generate() {
-      try {
-        if (!currentDNA) {
-          alert("תעשה קודם Extract DNA");
-          return;
-        }
-
-        document.getElementById("result").textContent = "Generating... ⏳";
-
-        const res = await fetch("/api/variation", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            dna: currentDNA,
-            mode: "club"
-          }),
-        });
-
-        const data = await res.json();
-
-        console.log("VARIATION:", data);
-
-        document.getElementById("result").textContent =
-          JSON.stringify(data, null, 2);
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById("result").textContent = "Variation Error ❌";
+      if (!currentDNA) {
+        alert("תעשה קודם Extract DNA");
+        return;
       }
+
+      document.getElementById("result").textContent = "Generating... ⏳";
+
+      const res = await fetch("/api/variation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dna: currentDNA,
+          mode: "club"
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        document.getElementById("result").textContent =
+          "AI Error ❌\n\n" + JSON.stringify(data, null, 2);
+        return;
+      }
+
+      document.getElementById("result").textContent =
+        JSON.stringify(data, null, 2);
     }
   </script>
 
