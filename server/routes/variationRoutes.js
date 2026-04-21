@@ -7,11 +7,27 @@ router.post("/", async (req, res) => {
   try {
     const { dna, mode } = req.body;
 
+    if (!dna) {
+      return res.status(400).json({ error: "DNA missing" });
+    }
+
     const result = await generateVariation(dna, mode);
 
-    res.json(result);
+    if (result.error) {
+      return res.status(500).json({
+        success: false,
+        error: result.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      newDNA: result,
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Variation failed" });
   }
 });
 
