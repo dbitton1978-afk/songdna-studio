@@ -3,29 +3,15 @@ import { generateVariation } from "../services/variationEngine.js";
 
 const router = express.Router();
 
-router.post("/generate", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const { dna, similarity, type } = req.body;
+    const { dna, mode } = req.body;
 
-    if (!dna) {
-      return res.status(400).json({
-        success: false,
-        message: "DNA is required"
-      });
-    }
+    const result = await generateVariation(dna, mode);
 
-    const result = await generateVariation(dna, similarity, type);
-
-    res.json({
-      success: true,
-      ...result
-    });
-
+    res.json(result);
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Variation failed"
-    });
+    res.status(500).json({ error: err.message });
   }
 });
 
