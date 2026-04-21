@@ -4,28 +4,53 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🔥 פונקציה ראשית (חייבת export!)
-export async function generateVariation(originalDNA) {
+export async function generateVariation(originalDNA, mode = "club") {
   try {
-    const prompt = `
-You are a world-class electronic music producer and sound designer.
+    let modeInstruction = "";
 
-You receive a track DNA (structure, groove, BPM, energy etc).
-Your job is to create a NEW variation that keeps the identity but improves it into a CLUB HIT.
+    if (mode === "viral") {
+      modeInstruction = `
+Focus on making the track highly catchy and addictive.
+Create a simple but unforgettable hook.
+Maximize replay value and emotional pull.
+`;
+    }
+
+    if (mode === "aggressive") {
+      modeInstruction = `
+Make the track more aggressive and powerful.
+Stronger drums, harder drops, more drive and tension.
+`;
+    }
+
+    if (mode === "emotional") {
+      modeInstruction = `
+Focus on emotion and atmosphere.
+Deep melodies, emotional chords, cinematic feeling.
+`;
+    }
+
+    if (mode === "club") {
+      modeInstruction = `
+Make it perfect for club performance.
+Strong groove, DJ-friendly structure, energetic drops.
+`;
+    }
+
+    const prompt = `
+You are a world-class electronic music producer.
+
+Create a NEW variation from this track DNA.
+
+${modeInstruction}
 
 GOALS:
-- Stronger groove and rhythm movement
-- More dynamic energy curve
-- A powerful drop
-- A memorable hook (2–4 notes)
-- Professional DJ structure (intro / build / drop / break / drop / outro)
+- Strong groove
+- Dynamic energy curve
+- Powerful drop
+- Memorable hook (2–4 notes)
 
-STYLE:
-- Make it sound like a real festival or club track
-- Avoid generic output
-- Add creativity and musical intelligence
-
-RETURN STRICT JSON:
+RETURN JSON:
 
 {
   "newDNA": {
@@ -65,13 +90,12 @@ ${JSON.stringify(originalDNA)}
 `;
 
     const response = await client.responses.create({
-      model: "gpt-4o-mini", // יציב וזול ומהיר
+      model: "gpt-4o-mini",
       input: prompt,
     });
 
     let text = response.output[0].content[0].text;
 
-    // 🔥 ניקוי אם ה-AI מחזיר ```json
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
@@ -83,31 +107,11 @@ ${JSON.stringify(originalDNA)}
     };
 
   } catch (error) {
-    console.error("❌ AI ERROR:", error.message);
+    console.error("AI ERROR:", error.message);
 
-    // fallback חכם
     return {
-      success: true,
-      newDNA: {
-        ...originalDNA,
-        bpm: originalDNA.bpm + Math.floor(Math.random() * 6 - 3),
-        groove: {
-          swing: Math.random().toFixed(2),
-          bounce: Math.random().toFixed(2),
-          drive: Math.random().toFixed(2),
-        },
-        energy_curve: [
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-        ],
-        club_energy: Math.floor(Math.random() * 100),
-        emotion_score: Math.floor(Math.random() * 100),
-      },
-      production_prompt: "Fallback variation (AI failed)",
-      similarity_score: "0",
+      success: false,
+      error: error.message,
     };
   }
 }
