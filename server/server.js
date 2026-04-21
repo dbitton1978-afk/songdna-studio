@@ -1,10 +1,18 @@
 import express from "express";
 import cors from "cors";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import path from "path";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// מאפשר גישה לקבצים שהועלו
+app.use("/uploads", express.static("uploads"));
+
+// routes
+app.use("/api/upload", uploadRoutes);
 
 app.get("/", (req, res) => {
   res.json({
