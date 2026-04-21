@@ -4,8 +4,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🔥 פונקציה ראשית (חייבת export!)
-export async function generateVariation(originalDNA) {
+export async function generateVariation(originalDNA, similarity = 60, type = "club") {
   try {
     const prompt = `
 You are a world-class electronic music producer and sound designer.
@@ -21,9 +20,9 @@ GOALS:
 - Professional DJ structure (intro / build / drop / break / drop / outro)
 
 STYLE:
-- Make it sound like a real festival or club track
-- Avoid generic output
-- Add creativity and musical intelligence
+- Variation type: ${type}
+- Similarity level: ${similarity}%
+- Keep identity but upgrade it
 
 RETURN STRICT JSON:
 
@@ -65,13 +64,12 @@ ${JSON.stringify(originalDNA)}
 `;
 
     const response = await client.responses.create({
-      model: "gpt-4o-mini", // יציב וזול ומהיר
+      model: "gpt-4o-mini",
       input: prompt,
     });
 
     let text = response.output[0].content[0].text;
 
-    // 🔥 ניקוי אם ה-AI מחזיר ```json
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
@@ -79,29 +77,28 @@ ${JSON.stringify(originalDNA)}
     return {
       success: true,
       ...parsed,
-      similarity_score: Math.random().toFixed(2),
+      similarity_score: (similarity / 100).toFixed(2),
     };
 
   } catch (error) {
     console.error("❌ AI ERROR:", error.message);
 
-    // fallback חכם
     return {
       success: true,
       newDNA: {
         ...originalDNA,
         bpm: originalDNA.bpm + Math.floor(Math.random() * 6 - 3),
         groove: {
-          swing: Math.random().toFixed(2),
-          bounce: Math.random().toFixed(2),
-          drive: Math.random().toFixed(2),
+          swing: Number(Math.random().toFixed(2)),
+          bounce: Number(Math.random().toFixed(2)),
+          drive: Number(Math.random().toFixed(2)),
         },
         energy_curve: [
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
-          Math.random().toFixed(2),
+          Number(Math.random().toFixed(2)),
+          Number(Math.random().toFixed(2)),
+          Number(Math.random().toFixed(2)),
+          Number(Math.random().toFixed(2)),
+          Number(Math.random().toFixed(2)),
         ],
         club_energy: Math.floor(Math.random() * 100),
         emotion_score: Math.floor(Math.random() * 100),
