@@ -1,70 +1,52 @@
+import OpenAI from "openai";
 import { calculateSimilarity } from "./similarityEngine.js";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export const generateVariation = async (dna, similarity = 60, type = "balanced") => {
 
-  let newDNA = mutateDNA(dna);
+  const prompt = `
+You are a music AI.
 
-  let score = calculateSimilarity(dna, newDNA);
+Create a NEW Song DNA based on this:
 
-  // אם דומה מדי → מתקנים
-  let attempts = 0;
+${JSON.stringify(dna)}
 
-  while (score > similarity / 100 && attempts < 5) {
-    newDNA = mutateDNA(dna, 20); // יותר שינוי
-    score = calculateSimilarity(dna, newDNA);
-    attempts++;
+Rules:
+- DO NOT copy melody or structure
+- Keep only abstract characteristics
+- Target similarity: ${similarity}%
+- Style: ${type}
+
+Return JSON only.
+`;
+
+  let newDNA;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    newDNA = JSON.parse(response.choices[0].message.content);
+
+  } catch (err) {
+    console.log("OpenAI Error:", err.message);
+    return {
+      newDNA: dna,
+      production_prompt: "AI failed",
+      similarity_score: "0"
+    };
   }
+
+  const score = calculateSimilarity(dna, newDNA);
 
   return {
     newDNA,
-    production_prompt: buildPrompt(newDNA, type),
+    production_prompt: "AI Generated Track",
     similarity_score: score.toFixed(2)
   };
-};
-
-const mutateDNA = (dna, intensity = 10) => {
-  const mutate = (val) => {
-    const change = (Math.random() * intensity * 2) - intensity;
-    return Math.max(0, Math.min(1, Number(val) + change / 100));
-  };
-
-  return {
-    ...dna,
-
-    bpm: dna.bpm + Math.floor((Math.random() * 10) - 5),
-
-    groove: {
-      swing: mutate(dna.groove.swing),
-      bounce: mutate(dna.groove.bounce),
-      drive: mutate(dna.groove.drive)
-    },
-
-    energy_curve: dna.energy_curve.map(v => mutate(v)),
-
-    harmony: ["dark", "uplifting", "tense"][Math.floor(Math.random() * 3)],
-
-    structure: shuffle(dna.structure),
-
-    club_energy: Math.min(100, dna.club_energy + Math.floor(Math.random() * 15)),
-
-    emotion_score: Math.min(100, dna.emotion_score + Math.floor(Math.random() * 15))
-  };
-};
-
-const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
-
-const buildPrompt = (dna, type) => {
-  return `
-Create a ${type} electronic track.
-
-BPM: ${dna.bpm}
-Style: ${dna.style_tags.join(", ")}
-
-Energy: ${dna.club_energy}
-Emotion: ${dna.emotion_score}
-
-Structure: ${dna.structure.join(" → ")}
-
-Make it original and not similar to the source.
-`;
 };
