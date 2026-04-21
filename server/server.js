@@ -8,24 +8,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// מאפשר גישה לקבצים שהועלו
+// סטטי - דף האתר
+app.use(express.static("public"));
+
+// גישה לקבצים שהועלו
 app.use("/uploads", express.static("uploads"));
 
-// routes
+// API
 app.use("/api/upload", uploadRoutes);
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "SongDNA Server is running 🚀"
-  });
-});
-
 app.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "ok"
-  });
+  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 10000;
