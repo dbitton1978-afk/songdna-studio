@@ -1,77 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>SongDNA Studio</title>
 </head>
+
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
 
-<h1>SongDNA Studio 🎧</h1>
+  <h1>SongDNA Studio 🎧</h1>
 
-<input type="file" id="fileInput"><br><br>
+  <!-- Upload -->
+  <input type="file" id="fileInput" />
+  <br><br>
 
-<button onclick="upload()">Upload</button>
-<button onclick="extract()">Extract DNA</button>
-<button onclick="generate()">Generate Variation</button>
+  <!-- Buttons -->
+  <button onclick="upload()">Upload</button>
+  <button onclick="extract()">Extract DNA</button>
+  <button onclick="generate()">Generate Variation</button>
 
-<pre id="result"></pre>
+  <br><br>
 
-<script>
-let lastFileUrl = "";
-let currentDNA = null;
+  <!-- Result -->
+  <pre id="result"></pre>
 
-async function upload() {
-  const file = document.getElementById("fileInput").files[0];
-  const formData = new FormData();
-  formData.append("file", file);
+  <script>
+    let currentDNA = null;
 
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData
-  });
+    // 🔼 Upload file
+    async function upload() {
+      try {
+        const fileInput = document.getElementById("fileInput");
 
-  const data = await res.json();
-  lastFileUrl = data.fileUrl;
+        if (!fileInput.files.length) {
+          alert("בחר קובץ קודם");
+          return;
+        }
 
-  document.getElementById("result").innerText =
-    "UPLOAD:\n" + JSON.stringify(data, null, 2);
-}
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
 
-async function extract() {
-  const res = await fetch("/api/dna/extract", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ fileUrl: lastFileUrl })
-  });
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-  const data = await res.json();
-  currentDNA = data.dna;
+        const data = await res.json();
 
-  document.getElementById("result").innerText =
-    "DNA:\n" + JSON.stringify(data, null, 2);
-}
+        console.log("UPLOAD:", data);
+        document.getElementById("result").textContent =
+          JSON.stringify(data, null, 2);
 
-async function generate() {
-  const res = await fetch("/api/variation/generate", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      dna: currentDNA,
-      similarity: 60,
-      type: "club"
-    })
-  });
+      } catch (err) {
+        console.error(err);
+        document.getElementById("result").textContent = "Upload Error ❌";
+      }
+    }
 
-  const data = await res.json();
+    // 🧬 Extract DNA
+    async function extract() {
+      try {
+        document.getElementById("result").textContent = "Extracting... ⏳";
 
-  document.getElementById("result").innerText =
-    "VARIATION:\n" + JSON.stringify(data, null, 2);
-}
-</script>
+        const res = await fetch("/api/dna");
+        const data = await res.json();
+
+        currentDNA = data.dna;
+
+        console.log("DNA:", data);
+
+        document.getElementById("result").textContent =
+          JSON.stringify(data, null, 2);
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("result").textContent = "DNA Error ❌";
+      }
+    }
+
+    // 🔥 Generate Variation
+    async function generate() {
+      try {
+        if (!currentDNA) {
+          alert("תעשה קודם Extract DNA");
+          return;
+        }
+
+        document.getElementById("result").textContent = "Generating... ⏳";
+
+        const res = await fetch("/api/variation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            dna: currentDNA,
+            mode: "club"
+          }),
+        });
+
+        const data = await res.json();
+
+        console.log("VARIATION:", data);
+
+        document.getElementById("result").textContent =
+          JSON.stringify(data, null, 2);
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("result").textContent = "Variation Error ❌";
+      }
+    }
+  </script>
 
 </body>
 </html>
