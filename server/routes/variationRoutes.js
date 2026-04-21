@@ -16,12 +16,10 @@ router.post("/generate", async (req, res) => {
 
     const result = await generateVariation(dna, similarity, type);
 
-    res.json({
-      success: true,
-      ...result
-    });
+    res.json(result);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
       message: "Variation failed"
