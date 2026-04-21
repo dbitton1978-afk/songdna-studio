@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import dnaRoutes from "./routes/dnaRoutes.js";
+import variationRoutes from "./routes/variationRoutes.js";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dna", dnaRoutes);
+app.use("/api/variation", variationRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ success: true });
