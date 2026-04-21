@@ -1,103 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>SongDNA Studio</title>
 </head>
-
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
 
-  <h1>SongDNA Studio 🎧</h1>
+<h1>SongDNA Studio 🎧</h1>
 
-  <!-- Upload -->
-  <input type="file" id="fileInput" />
-  <br><br>
+<input type="file" id="fileInput"><br><br>
 
-  <!-- Buttons -->
-  <button onclick="upload()">Upload</button>
-  <button onclick="extract()">Extract DNA</button>
-  <button onclick="generate()">Generate Variation</button>
+<button onclick="upload()">Upload</button>
+<button onclick="extract()">Extract DNA</button>
+<button onclick="generate()">Generate Variation</button>
 
-  <br><br>
+<pre id="result"></pre>
 
-  <!-- Result -->
-  <pre id="result"></pre>
+<script>
+let lastFileUrl = "";
+let currentDNA = null;
 
-  <script>
-    let currentDNA = null;
+async function upload() {
+  const file = document.getElementById("fileInput").files[0];
+  const formData = new FormData();
+  formData.append("file", file);
 
-    // 🔼 Upload
-    async function upload() {
-      const fileInput = document.getElementById("fileInput");
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData
+  });
 
-      if (!fileInput.files.length) {
-        alert("בחר קובץ קודם");
-        return;
-      }
+  const data = await res.json();
+  lastFileUrl = data.fileUrl;
 
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
+  document.getElementById("result").innerText =
+    "UPLOAD:\n" + JSON.stringify(data, null, 2);
+}
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+async function extract() {
+  const res = await fetch("/api/dna/extract", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fileUrl: lastFileUrl })
+  });
 
-      const data = await res.json();
-      document.getElementById("result").textContent =
-        JSON.stringify(data, null, 2);
-    }
+  const data = await res.json();
+  currentDNA = data.dna;
 
-    // 🧬 Extract DNA
-    async function extract() {
-      document.getElementById("result").textContent = "Loading DNA...";
+  document.getElementById("result").innerText =
+    "DNA:\n" + JSON.stringify(data, null, 2);
+}
 
-      const res = await fetch("/api/dna");
-      const data = await res.json();
+async function generate() {
+  const res = await fetch("/api/variation/generate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      dna: currentDNA,
+      similarity: 60,
+      type: "club"
+    })
+  });
 
-      if (!data.success) {
-        document.getElementById("result").textContent = "DNA Error ❌";
-        return;
-      }
+  const data = await res.json();
 
-      currentDNA = data.dna;
-
-      document.getElementById("result").textContent =
-        JSON.stringify(data, null, 2);
-    }
-
-    // 🔥 Generate Variation (AI)
-    async function generate() {
-      if (!currentDNA) {
-        alert("תעשה קודם Extract DNA");
-        return;
-      }
-
-      document.getElementById("result").textContent = "Generating... ⏳";
-
-      const res = await fetch("/api/variation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dna: currentDNA,
-          mode: "club"
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        document.getElementById("result").textContent =
-          "AI Error ❌\n\n" + JSON.stringify(data, null, 2);
-        return;
-      }
-
-      document.getElementById("result").textContent =
-        JSON.stringify(data, null, 2);
-    }
-  </script>
+  document.getElementById("result").innerText =
+    "VARIATION:\n" + JSON.stringify(data, null, 2);
+}
+</script>
 
 </body>
 </html>
