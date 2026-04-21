@@ -6,15 +6,19 @@
 </head>
 <body style="font-family: Arial; text-align: center; margin-top: 50px;">
 
-  <h1>Upload Song 🎧</h1>
+  <h1>SongDNA Studio 🎧</h1>
 
   <input type="file" id="fileInput" />
   <br /><br />
-  <button onclick="upload()">Upload</button>
 
-  <p id="result"></p>
+  <button onclick="upload()">Upload</button>
+  <button onclick="extract()">Extract DNA</button>
+
+  <pre id="result"></pre>
 
   <script>
+    let lastFileUrl = "";
+
     async function upload() {
       const fileInput = document.getElementById("fileInput");
       const file = fileInput.files[0];
@@ -33,9 +37,32 @@
       });
 
       const data = await res.json();
+      lastFileUrl = data.fileUrl;
 
       document.getElementById("result").innerText =
-        JSON.stringify(data, null, 2);
+        "Upload:\n" + JSON.stringify(data, null, 2);
+    }
+
+    async function extract() {
+      if (!lastFileUrl) {
+        alert("תעלה קובץ קודם");
+        return;
+      }
+
+      const res = await fetch("/api/dna/extract", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fileUrl: lastFileUrl
+        })
+      });
+
+      const data = await res.json();
+
+      document.getElementById("result").innerText =
+        "DNA:\n" + JSON.stringify(data, null, 2);
     }
   </script>
 
