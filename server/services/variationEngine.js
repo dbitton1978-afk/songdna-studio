@@ -1,52 +1,38 @@
 import OpenAI from "openai";
-import { calculateSimilarity } from "./similarityEngine.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const generateVariation = async (dna, similarity = 60, type = "balanced") => {
+export async function generateVariationWithAI(dna) {
+  try {
+    const prompt = `
+You are a professional music producer.
 
-  const prompt = `
-You are a music AI.
+Take this track DNA and create a new variation:
+${JSON.stringify(dna, null, 2)}
 
-Create a NEW Song DNA based on this:
-
-${JSON.stringify(dna)}
-
-Rules:
-- DO NOT copy melody or structure
-- Keep only abstract characteristics
-- Target similarity: ${similarity}%
-- Style: ${type}
-
-Return JSON only.
+Return ONLY valid JSON with:
+- newDNA (modified values)
+- production_prompt (text)
+- similarity_score (0-1)
 `;
 
-  let newDNA;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt,
     });
 
-    newDNA = JSON.parse(response.choices[0].message.content);
+    const text = response.output[0].content[0].text;
+
+    return JSON.parse(text);
 
   } catch (err) {
-    console.log("OpenAI Error:", err.message);
+    console.error("OpenAI Error:", err.message);
     return {
       newDNA: dna,
       production_prompt: "AI failed",
       similarity_score: "0"
     };
   }
-
-  const score = calculateSimilarity(dna, newDNA);
-
-  return {
-    newDNA,
-    production_prompt: "AI Generated Track",
-    similarity_score: score.toFixed(2)
-  };
-};
+}
