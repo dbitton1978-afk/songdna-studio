@@ -11,7 +11,7 @@
 
 <input type="file" id="fileInput"><br><br>
 
-<!-- 🔥 בחירת מצב -->
+<!-- 🎯 בחירת מצב -->
 <select id="mode">
   <option value="club">Club 🔥</option>
   <option value="viral">Viral 🚀</option>
@@ -21,28 +21,52 @@
 
 <br><br>
 
+<!-- 🎚️ שליטת דמיון -->
+<label>Similarity:</label>
+<input type="range" id="similarity" min="20" max="90" value="60">
+<span id="simValue">60</span>
+
+<br><br>
+
 <button onclick="upload()">Upload</button>
 <button onclick="extract()">Extract DNA</button>
 <button onclick="generate()">Generate Variation</button>
 <button onclick="autoRemix()">🔥 Auto Remix</button>
-  
+
+<br><br>
+
+<!-- 🎯 פעולות -->
+<button onclick="copyPrompt()">📋 Copy Prompt</button>
+<button onclick="openSuno()">🎵 Open Suno</button>
+
 <pre id="result"></pre>
 
 <script>
 let lastFileUrl = "";
 let currentDNA = null;
+let bestPrompt = "";
+let currentMode = "club";
 
+/* 🎚️ עדכון מספר */
+document.getElementById("similarity").oninput = function() {
+  document.getElementById("simValue").innerText = this.value;
+};
+
+/* 🎯 שינוי מצב */
+document.getElementById("mode").onchange = function() {
+  currentMode = this.value;
+};
+
+/* 📤 Upload */
 async function upload() {
   try {
     const file = document.getElementById("fileInput").files[0];
-
-    if (!file) {
-      alert("בחר קובץ קודם");
-      return;
-    }
+    if (!file) return alert("בחר קובץ קודם");
 
     const formData = new FormData();
     formData.append("file", file);
+
+    document.getElementById("result").innerText = "Uploading...";
 
     const res = await fetch("/api/upload", {
       method: "POST",
@@ -55,19 +79,15 @@ async function upload() {
     document.getElementById("result").innerText =
       "UPLOAD:\n" + JSON.stringify(data, null, 2);
 
-  } catch (err) {
+  } catch {
     document.getElementById("result").innerText = "Upload Error ❌";
   }
 }
 
+/* 🧬 Extract */
 async function extract() {
   try {
-    if (!lastFileUrl) {
-      alert("תעלה קובץ קודם");
-      return;
-    }
-
-    document.getElementById("result").innerText = "Extracting...";
+    document.getElementById("result").innerText = "Extracting DNA...";
 
     const res = await fetch("/api/dna/extract", {
       method: "POST",
@@ -78,32 +98,22 @@ async function extract() {
     });
 
     const data = await res.json();
-
-    if (!data.success) {
-      document.getElementById("result").innerText = "DNA Error ❌";
-      return;
-    }
-
     currentDNA = data.dna;
 
     document.getElementById("result").innerText =
       "DNA:\n" + JSON.stringify(data, null, 2);
 
-  } catch (err) {
+  } catch {
     document.getElementById("result").innerText = "DNA Error ❌";
   }
 }
 
+/* ⚡ Generate רגיל */
 async function generate() {
   try {
-    if (!currentDNA) {
-      alert("תעשה Extract DNA קודם");
-      return;
-    }
-
     document.getElementById("result").innerText = "Generating...";
 
-    const mode = document.getElementById("mode").value;
+    const similarity = document.getElementById("similarity").value;
 
     const res = await fetch("/api/variation/generate", {
       method: "POST",
@@ -112,29 +122,32 @@ async function generate() {
       },
       body: JSON.stringify({
         dna: currentDNA,
-        similarity: 60,
-        type: mode
+        similarity: Number(similarity),
+        type: currentMode
       })
     });
 
     const data = await res.json();
 
+    bestPrompt = data.production_prompt || "";
+
     document.getElementById("result").innerText =
       "VARIATION:\n" + JSON.stringify(data, null, 2);
 
-  } catch (err) {
-    document.getElementById("result").innerText = "Variation Error ❌";
+  } catch {
+    document.getElementById("result").innerText = "Generate Error ❌";
   }
 }
-  async function autoRemix() {
+
+/* 🔥 Auto Remix */
+async function autoRemix() {
   try {
     if (!currentDNA) {
       alert("תעשה Extract קודם");
       return;
     }
 
-    const similarity = 60; // כמו generate
-    const mode = document.getElementById("mode").value;
+    const similarity = document.getElementById("similarity").value;
 
     document.getElementById("result").innerText = "Generating Auto Remix...";
 
@@ -145,12 +158,15 @@ async function generate() {
       },
       body: JSON.stringify({
         dna: currentDNA,
-        similarity: similarity,
-        type: mode
+        similarity: Number(similarity),
+        type: currentMode
       })
     });
 
     const data = await res.json();
+
+    /* 🔥 שומר BEST */
+    bestPrompt = data.best?.production_prompt || "";
 
     document.getElementById("result").innerText =
       "🏆 BEST VERSION:\n" +
@@ -158,10 +174,31 @@ async function generate() {
       "\n\n🔥 ALL VARIATIONS:\n" +
       JSON.stringify(data.all, null, 2);
 
-  } catch (err) {
-    console.error(err);
+  } catch {
     document.getElementById("result").innerText = "Auto Remix Error ❌";
   }
+}
+
+/* 📋 COPY */
+function copyPrompt() {
+  if (!bestPrompt) {
+    alert("אין Prompt עדיין");
+    return;
+  }
+
+  navigator.clipboard.writeText(bestPrompt);
+  alert("Copied!");
+}
+
+/* 🎵 SUNO */
+function openSuno() {
+  if (!bestPrompt) {
+    alert("אין Prompt עדיין");
+    return;
+  }
+
+  const url = "https://suno.com/create";
+  window.open(url, "_blank");
 }
 </script>
 
