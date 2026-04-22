@@ -38,13 +38,12 @@ export async function generateVariation(originalDNA) {
 }
 
 /* =========================================
-   🔥 AUTO REMIX (כמה וריאציות + BEST)
+   🔥 AUTO REMIX
 ========================================= */
 export async function generateAutoRemix(originalDNA, similarity = 60, type = "club") {
   try {
     const variations = [];
 
-    // 🔁 מייצר 3 וריאציות
     for (let i = 0; i < 3; i++) {
       const v = await generateVariation(originalDNA);
       if (v.success) variations.push(v);
@@ -54,7 +53,7 @@ export async function generateAutoRemix(originalDNA, similarity = 60, type = "cl
       throw new Error("No variations generated");
     }
 
-    // 🏆 בחירת BEST לפי energy + emotion
+    // 🏆 BEST = הכי חזק לפי אנרגיה + רגש
     const best = variations.sort((a, b) => {
       return (
         (b.newDNA?.club_energy || 0) +
@@ -81,35 +80,56 @@ export async function generateAutoRemix(originalDNA, similarity = 60, type = "cl
 }
 
 /* =========================================
-   🧠 PROMPT BUILDER (הכי חשוב!)
+   🧠 PROMPT BUILDER (Suno READY)
 ========================================= */
 function buildPrompt(originalDNA) {
   return `
-You are a world-class music producer AI.
+You are a world-class electronic music producer.
 
 CRITICAL RULE:
-You MUST preserve the ORIGINAL STYLE and GENRE of the track.
+You MUST preserve the ORIGINAL GENRE and STYLE of the track.
 
-DO NOT change genre.
-DO NOT create a different musical identity.
+DO NOT:
+- Change genre
+- Switch musical direction
+- Create a different vibe
 
 Instead:
-→ Improve the SAME track
-→ Stay inside the SAME musical world
+Create a HIGH-QUALITY variation of the SAME TRACK.
 
-STRICT:
-- BPM ±2 max
-- Same groove feel
-- Same bass type
-- Same vibe and energy direction
+STRICT CONSTRAINTS:
+- BPM must stay within ±2
+- Groove must feel similar
+- Bass style must match
+- Emotional tone must stay consistent
+- Sound palette must stay aligned
 
 IMPROVE:
 - Drop impact
-- Groove quality
-- Energy curve
-- Hook (2–4 notes)
+- Groove tightness
+- Energy flow
+- Hook (short, catchy, genre-appropriate)
 
-RETURN STRICT JSON ONLY:
+---------------------------------------
+IMPORTANT OUTPUT RULE:
+The "production_prompt" MUST be a FULL Suno-ready prompt.
+
+It MUST include:
+- Genre
+- BPM
+- Drum style
+- Bass description
+- Melody style
+- Energy progression
+- Drop description
+- Atmosphere
+- Structure
+
+Write it as ONE paragraph (no bullet points).
+
+---------------------------------------
+
+RETURN STRICT JSON:
 
 {
   "newDNA": {
@@ -142,7 +162,7 @@ RETURN STRICT JSON ONLY:
     "club_energy": number,
     "emotion_score": number
   },
-  "production_prompt": string
+  "production_prompt": "FULL SUNO PROMPT HERE"
 }
 
 ORIGINAL DNA:
