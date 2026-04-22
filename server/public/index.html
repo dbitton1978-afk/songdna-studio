@@ -11,7 +11,7 @@
 
 <input type="file" id="fileInput"><br><br>
 
-<!-- 🔥 Boost Buttons -->
+<!-- 🔥 Boost -->
 <div>
   <button onclick="setMode('club')">Club 🔥</button>
   <button onclick="setMode('viral')">Viral 🚀</button>
@@ -21,7 +21,7 @@
 
 <br>
 
-<!-- 🔧 Similarity -->
+<!-- 🎚 Similarity -->
 <label>Similarity: <span id="simValue">60</span>%</label><br>
 <input type="range" min="20" max="90" value="60" id="similarity" oninput="updateSim()" style="width: 300px;">
 
@@ -31,12 +31,23 @@
 <button onclick="extract()">Extract DNA</button>
 <button onclick="generate()">Generate Variation</button>
 
+<br><br>
+
+<!-- 🚀 NEW ACTIONS -->
+<div>
+  <button onclick="copyPrompt()">📋 Copy Prompt</button>
+  <button onclick="openSuno()">🎵 Open in Suno</button>
+</div>
+
+<br>
+
 <pre id="result"></pre>
 
 <script>
 let lastFileUrl = "";
 let currentDNA = null;
 let currentMode = "club";
+let lastPrompt = "";
 
 function setMode(mode) {
   currentMode = mode;
@@ -138,12 +149,38 @@ async function generate() {
 
     const data = await res.json();
 
+    // 🔥 שמירת הפרומפט
+    lastPrompt = data.production_prompt || "";
+
     document.getElementById("result").innerText =
       "VARIATION:\n" + JSON.stringify(data, null, 2);
 
   } catch {
     document.getElementById("result").innerText = "Variation Error ❌";
   }
+}
+
+// 📋 COPY
+function copyPrompt() {
+  if (!lastPrompt) {
+    alert("אין פרומפט להעתקה");
+    return;
+  }
+
+  navigator.clipboard.writeText(lastPrompt);
+  alert("הועתק!");
+}
+
+// 🎵 SUNO
+function openSuno() {
+  if (!lastPrompt) {
+    alert("תייצר Variation קודם");
+    return;
+  }
+
+  window.open("https://app.suno.ai/", "_blank");
+
+  // המשתמש פשוט מדביק שם
 }
 </script>
 
