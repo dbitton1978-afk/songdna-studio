@@ -133,7 +133,8 @@ async function generate() {
       return;
     }
 
-    const similarity = document.getElementById("similarity").value;
+    const similarity = 60; // כמו generate
+    const mode = document.getElementById("mode").value;
 
     document.getElementById("result").innerText = "Generating Auto Remix...";
 
@@ -144,14 +145,12 @@ async function generate() {
       },
       body: JSON.stringify({
         dna: currentDNA,
-        similarity: Number(similarity),
-        type: currentMode
+        similarity: similarity,
+        type: mode
       })
     });
 
     const data = await res.json();
-
-    lastPrompt = data.best.production_prompt;
 
     document.getElementById("result").innerText =
       "🏆 BEST VERSION:\n" +
@@ -159,7 +158,8 @@ async function generate() {
       "\n\n🔥 ALL VARIATIONS:\n" +
       JSON.stringify(data.all, null, 2);
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     document.getElementById("result").innerText = "Auto Remix Error ❌";
   }
 }
