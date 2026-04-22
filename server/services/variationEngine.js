@@ -40,7 +40,7 @@ export async function generateVariation(originalDNA) {
 /* =========================================
    🔥 AUTO REMIX
 ========================================= */
-export async function generateAutoRemix(originalDNA, similarity = 60, type = "club") {
+export async function generateAutoRemix(originalDNA) {
   try {
     const variations = [];
 
@@ -53,7 +53,7 @@ export async function generateAutoRemix(originalDNA, similarity = 60, type = "cl
       throw new Error("No variations generated");
     }
 
-    // 🏆 BEST = הכי חזק לפי אנרגיה + רגש
+    // 🏆 BEST = הכי חזק לפי DNA (אנרגיה + רגש)
     const best = variations.sort((a, b) => {
       return (
         (b.newDNA?.club_energy || 0) +
@@ -80,52 +80,59 @@ export async function generateAutoRemix(originalDNA, similarity = 60, type = "cl
 }
 
 /* =========================================
-   🧠 PROMPT BUILDER (Suno READY)
+   🧠 PROMPT BUILDER (GENRE LOCK + SUNO READY)
 ========================================= */
 function buildPrompt(originalDNA) {
   return `
-You are a world-class electronic music producer.
+You are a world-class music producer AI.
+
+STEP 1:
+Analyze the ORIGINAL DNA and DETECT:
+- exact genre
+- sub-genre
+- groove identity
+- emotional direction
+
+STEP 2:
+Create a variation ONLY inside that same musical world.
 
 CRITICAL RULE:
-You MUST preserve the ORIGINAL GENRE and STYLE of the track.
+You MUST NOT change genre.
 
-DO NOT:
-- Change genre
-- Switch musical direction
-- Create a different vibe
-
-Instead:
-Create a HIGH-QUALITY variation of the SAME TRACK.
+BAD:
+"electronic track"
+GOOD:
+"melodic techno", "progressive psytrance", "afro house", etc.
 
 STRICT CONSTRAINTS:
 - BPM must stay within ±2
-- Groove must feel similar
-- Bass style must match
-- Emotional tone must stay consistent
-- Sound palette must stay aligned
+- Same groove feel
+- Same bass movement type
+- Same emotional tone
+- Same structure logic
 
-IMPROVE:
-- Drop impact
-- Groove tightness
-- Energy flow
-- Hook (short, catchy, genre-appropriate)
+IMPROVEMENTS:
+- Stronger drop
+- Better groove
+- More precise energy curve
+- Catchy hook
 
 ---------------------------------------
-IMPORTANT OUTPUT RULE:
-The "production_prompt" MUST be a FULL Suno-ready prompt.
+SUNO OUTPUT RULE:
 
-It MUST include:
-- Genre
+The production_prompt MUST be:
+- One paragraph
+- Clear genre
 - BPM
 - Drum style
-- Bass description
-- Melody style
-- Energy progression
+- Bassline type
+- Melody description
+- Energy build
 - Drop description
 - Atmosphere
 - Structure
 
-Write it as ONE paragraph (no bullet points).
+It must sound like a REAL track description.
 
 ---------------------------------------
 
@@ -162,7 +169,7 @@ RETURN STRICT JSON:
     "club_energy": number,
     "emotion_score": number
   },
-  "production_prompt": "FULL SUNO PROMPT HERE"
+  "production_prompt": string
 }
 
 ORIGINAL DNA:
