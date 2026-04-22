@@ -3,72 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <title>SongDNA Studio</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary { background: #4CAF50; color: white; }
+    .secondary { background: #333; color: white; }
+    .danger { background: #ff4444; color: white; }
+
+    .card-container {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 15px;
+      width: 280px;
+      text-align: left;
+      border: 2px solid transparent;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      border-color: #4CAF50;
+      transform: scale(1.02);
+    }
+
+    .selected {
+      border-color: #4CAF50;
+    }
+
+    .score {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #4CAF50;
+    }
+
+    .actions {
+      margin-top: 10px;
+    }
+
+    .top-controls {
+      margin-bottom: 20px;
+    }
+
+    input[type="range"] {
+      width: 300px;
+    }
+  </style>
 </head>
 
-<body style="font-family: Arial; text-align: center; margin-top: 50px;">
+<body>
 
 <h1>SongDNA Studio 🎧</h1>
 
 <input type="file" id="fileInput"><br><br>
 
-<!-- 🔥 Boost -->
-<div>
-  <button onclick="setMode('club')">Club 🔥</button>
-  <button onclick="setMode('viral')">Viral 🚀</button>
-  <button onclick="setMode('emotional')">Emotional ❤️</button>
-  <button onclick="setMode('aggressive')">Aggressive ⚡</button>
+<div class="top-controls">
+  <button onclick="setMode('club')" class="secondary">Club 🔥</button>
+  <button onclick="setMode('viral')" class="secondary">Viral 🚀</button>
+  <button onclick="setMode('emotional')" class="secondary">Emotional ❤️</button>
+  <button onclick="setMode('aggressive')" class="secondary">Aggressive ⚡</button>
+
+  <br><br>
+
+  <label>Similarity: <span id="simValue">60</span>%</label><br>
+  <input type="range" min="20" max="90" value="60" id="similarity" oninput="updateSim()">
 </div>
 
-<br>
+<button class="primary" onclick="upload()">Upload</button>
+<button class="primary" onclick="extract()">Extract DNA</button>
+<button class="primary" onclick="autoRemix()">🔥 Auto Remix</button>
 
-<label>Similarity: <span id="simValue">60</span>%</label><br>
-<input type="range" min="20" max="90" value="60" id="similarity" oninput="updateSim()" style="width: 300px;">
-
-<br><br>
-
-<button onclick="upload()">Upload</button>
-<button onclick="extract()">Extract DNA</button>
-<button onclick="generate()">Generate Variation</button>
-<button onclick="autoRemix()">🔥 Auto Remix</button>
-
-<br><br>
-
-<!-- 🎯 בחירה -->
-<div>
-  <label>בחר וריאציה:</label>
-  <select id="variationSelect"></select>
-</div>
-
-<br>
-
-<!-- 🚀 Actions -->
-<div>
-  <button onclick="copyPrompt()">📋 Copy Prompt</button>
-  <button onclick="openSuno()">🎵 Open in Suno</button>
-</div>
-
-<br>
-
-<pre id="result"></pre>
+<div class="card-container" id="cards"></div>
 
 <script>
-let lastFileUrl = "";
 let currentDNA = null;
 let currentMode = "club";
 let variations = [];
 let selectedIndex = 0;
 
-// --------------------
 function setMode(mode) {
   currentMode = mode;
 }
 
 function updateSim() {
-  const val = document.getElementById("similarity").value;
-  document.getElementById("simValue").innerText = val;
+  document.getElementById("simValue").innerText =
+    document.getElementById("similarity").value;
 }
 
-// --------------------
+// ----------------
 // Upload
 async function upload() {
   const file = document.getElementById("fileInput").files[0];
@@ -77,67 +127,35 @@ async function upload() {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/upload", {
+  await fetch("/api/upload", {
     method: "POST",
     body: formData
   });
 
-  const data = await res.json();
-  lastFileUrl = data.fileUrl;
-
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
+  alert("Uploaded ✔");
 }
 
-// --------------------
+// ----------------
 // Extract
 async function extract() {
-  if (!lastFileUrl) return alert("תעלה קובץ קודם");
-
   const res = await fetch("/api/dna/extract", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ fileUrl: lastFileUrl })
+    body: JSON.stringify({})
   });
 
   const data = await res.json();
   currentDNA = data.dna;
 
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
+  alert("DNA Ready ✔");
 }
 
-// --------------------
-// Generate single
-async function generate() {
-  const similarity = document.getElementById("similarity").value;
-
-  const res = await fetch("/api/variation/generate", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      dna: currentDNA,
-      similarity: Number(similarity),
-      type: currentMode
-    })
-  });
-
-  const data = await res.json();
-
-  variations = [data]; // רק אחת
-  selectedIndex = 0;
-  updateDropdown();
-
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
-}
-
-// --------------------
-// 🔥 AUTO REMIX
+// ----------------
+// AUTO REMIX
 async function autoRemix() {
-  const similarity = document.getElementById("similarity").value;
+  if (!currentDNA) return alert("Extract קודם");
 
-  document.getElementById("result").innerText = "Generating...";
+  const similarity = document.getElementById("similarity").value;
 
   const res = await fetch("/api/variation/auto-remix", {
     method: "POST",
@@ -152,53 +170,58 @@ async function autoRemix() {
   const data = await res.json();
 
   variations = data.all;
-  selectedIndex = 0;
-
-  updateDropdown();
-
-  document.getElementById("result").innerText =
-    JSON.stringify(data.best, null, 2);
+  renderCards();
 }
 
-// --------------------
-// 🎯 Dropdown
-function updateDropdown() {
-  const select = document.getElementById("variationSelect");
-  select.innerHTML = "";
+// ----------------
+// Render Cards
+function renderCards() {
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
 
   variations.forEach((v, i) => {
-    const option = document.createElement("option");
-    option.value = i;
-    option.text = "Variation " + (i + 1) + " (score: " + (v.score || "-") + ")";
-    select.appendChild(option);
+    const card = document.createElement("div");
+    card.className = "card";
+
+    if (i == selectedIndex) card.classList.add("selected");
+
+    card.innerHTML = `
+      <div class="score">⭐ Score: ${v.score || "-"}</div>
+
+      <div><b>BPM:</b> ${v.newDNA?.bpm || "-"}</div>
+      <div><b>Energy:</b> ${v.newDNA?.club_energy || "-"}</div>
+      <div><b>Emotion:</b> ${v.newDNA?.emotion_score || "-"}</div>
+
+      <div class="actions">
+        <button onclick="selectCard(${i})">Select</button>
+        <button onclick="copyPrompt(${i})">📋 Copy</button>
+        <button onclick="openSuno(${i})">🎵 Suno</button>
+      </div>
+    `;
+
+    container.appendChild(card);
   });
-
-  select.onchange = () => {
-    selectedIndex = select.value;
-  };
 }
 
-// --------------------
-// 📋 Copy
-function copyPrompt() {
-  if (!variations.length) return alert("אין וריאציות");
+// ----------------
+// Select
+function selectCard(i) {
+  selectedIndex = i;
+  renderCards();
+}
 
-  const prompt = variations[selectedIndex].production_prompt;
-
+// ----------------
+// Copy
+function copyPrompt(i) {
+  const prompt = variations[i].production_prompt;
   navigator.clipboard.writeText(prompt);
-  alert("הועתק!");
+  alert("Copied ✔");
 }
 
-// --------------------
-// 🎵 Suno
-function openSuno() {
-  if (!variations.length) return alert("אין וריאציות");
-
-  const prompt = variations[selectedIndex].production_prompt;
-
+// ----------------
+// Suno
+function openSuno(i) {
   window.open("https://app.suno.ai/", "_blank");
-
-  // המשתמש מדביק שם
 }
 </script>
 
