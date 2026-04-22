@@ -4,41 +4,110 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+/* =========================================
+   🎧 SINGLE VARIATION
+========================================= */
 export async function generateVariation(originalDNA) {
   try {
-    const prompt = `
+    const prompt = buildPrompt(originalDNA);
+
+    const response = await client.responses.create({
+      model: "gpt-4o-mini",
+      input: prompt,
+    });
+
+    let text = response.output[0].content[0].text;
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    const parsed = JSON.parse(text);
+
+    return {
+      success: true,
+      ...parsed,
+      similarity_score: Math.random().toFixed(2),
+    };
+
+  } catch (error) {
+    console.error("❌ AI ERROR:", error.message);
+
+    return {
+      success: false,
+      message: "AI failed",
+    };
+  }
+}
+
+/* =========================================
+   🔥 AUTO REMIX (כמה וריאציות + BEST)
+========================================= */
+export async function generateAutoRemix(originalDNA, similarity = 60, type = "club") {
+  try {
+    const variations = [];
+
+    // 🔁 מייצר 3 וריאציות
+    for (let i = 0; i < 3; i++) {
+      const v = await generateVariation(originalDNA);
+      if (v.success) variations.push(v);
+    }
+
+    if (variations.length === 0) {
+      throw new Error("No variations generated");
+    }
+
+    // 🏆 בחירת BEST לפי energy + emotion
+    const best = variations.sort((a, b) => {
+      return (
+        (b.newDNA?.club_energy || 0) +
+        (b.newDNA?.emotion_score || 0) -
+        ((a.newDNA?.club_energy || 0) +
+        (a.newDNA?.emotion_score || 0))
+      );
+    })[0];
+
+    return {
+      success: true,
+      best,
+      all: variations,
+    };
+
+  } catch (error) {
+    console.error("❌ AUTO REMIX ERROR:", error.message);
+
+    return {
+      success: false,
+      message: "Auto Remix failed",
+    };
+  }
+}
+
+/* =========================================
+   🧠 PROMPT BUILDER (הכי חשוב!)
+========================================= */
+function buildPrompt(originalDNA) {
+  return `
 You are a world-class music producer AI.
 
 CRITICAL RULE:
 You MUST preserve the ORIGINAL STYLE and GENRE of the track.
 
-DO NOT invent a new genre.
-DO NOT change musical direction.
+DO NOT change genre.
+DO NOT create a different musical identity.
 
 Instead:
-→ Analyze the ORIGINAL DNA
-→ Identify its musical identity (genre, groove, energy, vibe)
-→ Create a variation INSIDE the SAME WORLD
+→ Improve the SAME track
+→ Stay inside the SAME musical world
 
-STRICT CONSTRAINTS:
-- BPM must stay very close (±2 max)
-- Groove must feel similar
-- Bass style must match
-- Energy direction must remain consistent
-- Sound palette must stay coherent
-- Structure logic must stay recognizable
+STRICT:
+- BPM ±2 max
+- Same groove feel
+- Same bass type
+- Same vibe and energy direction
 
-ALLOWED IMPROVEMENTS:
-- Better drop
-- Stronger groove
-- Cleaner energy curve
-- More memorable hook (2–4 notes)
-- More professional club readiness
-
-VERY IMPORTANT:
-The output should feel like:
-"A better version of the SAME TRACK"
-NOT a different track.
+IMPROVE:
+- Drop impact
+- Groove quality
+- Energy curve
+- Hook (2–4 notes)
 
 RETURN STRICT JSON ONLY:
 
@@ -79,35 +148,4 @@ RETURN STRICT JSON ONLY:
 ORIGINAL DNA:
 ${JSON.stringify(originalDNA)}
 `;
-
-    const response = await client.responses.create({
-      model: "gpt-4o-mini",
-      input: prompt,
-    });
-
-    let text = response.output[0].content[0].text;
-
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-    const parsed = JSON.parse(text);
-
-    return {
-      success: true,
-      ...parsed,
-      similarity_score: Math.random().toFixed(2),
-    };
-
-  } catch (error) {
-    console.error("❌ AI ERROR:", error.message);
-
-    return {
-      success: true,
-      newDNA: {
-        ...originalDNA,
-        bpm: originalDNA.bpm,
-      },
-      production_prompt: "Fallback (AI failed)",
-      similarity_score: "0",
-    };
-  }
 }
