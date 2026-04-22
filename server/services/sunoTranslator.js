@@ -9,26 +9,29 @@ export async function buildSunoPrompt(blueprint) {
     const prompt = `
 You are an expert in writing prompts for Suno AI.
 
-Your job:
-Convert a technical music blueprint into a HIGH QUALITY Suno prompt.
+Convert the following technical music blueprint into a natural, musical, HIGH QUALITY Suno prompt.
 
-CRITICAL:
-- Keep the exact genre and vibe
-- Make it sound natural and musical
-- Do NOT sound technical
-- Do NOT output JSON
+RULES:
+- Keep exact genre & vibe
+- No technical jargon
+- Make it musical and clear
+- One paragraph only
+- Must sound like a real track description
 
-STYLE:
-- 1 paragraph only
-- Rich musical description
-- Clear groove, bass, melody, energy
-- Feel like a real track
+IMPORTANT:
+- Include BPM
+- Include groove feel
+- Include bass style
+- Include melody type
+- Include energy and drop
+- Include atmosphere
+- Include structure
 
-INPUT BLUEPRINT:
+INPUT:
 ${JSON.stringify(blueprint)}
 
 OUTPUT:
-A clean Suno-ready prompt
+Only the final prompt text (no JSON)
 `;
 
     const response = await client.responses.create({
@@ -36,7 +39,10 @@ A clean Suno-ready prompt
       input: prompt,
     });
 
-    return response.output[0].content[0].text;
+    return (
+      response?.output?.[0]?.content?.[0]?.text ||
+      "Failed to generate Suno prompt"
+    ).trim();
 
   } catch (error) {
     console.error("❌ SUNO TRANSLATOR ERROR:", error.message);
