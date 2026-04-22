@@ -1,9 +1,13 @@
 import express from "express";
-import { extractDNA } from "../services/dnaExtractor.js";
 import fs from "fs";
+import { extractDNA } from "../services/dnaExtractor.js";
+import { deepAnalyzeDNA } from "../services/dnaDeepAnalyzer.js";
 
 const router = express.Router();
 
+/* =========================================
+   🎧 EXTRACT DNA FROM UPLOADED FILE
+========================================= */
 router.post("/extract", async (req, res) => {
   try {
     const { fileUrl } = req.body;
@@ -31,9 +35,46 @@ router.post("/extract", async (req, res) => {
       dna,
     });
   } catch (err) {
+    console.error("DNA EXTRACT ERROR:", err.message);
     res.status(500).json({
       success: false,
       message: "DNA extraction failed",
+    });
+  }
+});
+
+/* =========================================
+   🧠 DNA -> BLUEPRINT
+========================================= */
+router.post("/blueprint", async (req, res) => {
+  try {
+    const { dna } = req.body;
+
+    if (!dna) {
+      return res.status(400).json({
+        success: false,
+        message: "dna is required",
+      });
+    }
+
+    const blueprint = await deepAnalyzeDNA(dna);
+
+    if (blueprint?.error) {
+      return res.status(500).json({
+        success: false,
+        message: blueprint.error,
+      });
+    }
+
+    res.json({
+      success: true,
+      blueprint,
+    });
+  } catch (err) {
+    console.error("DNA BLUEPRINT ERROR:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Blueprint generation failed",
     });
   }
 });
