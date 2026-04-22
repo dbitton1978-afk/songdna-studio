@@ -30,7 +30,8 @@
 <button onclick="upload()">Upload</button>
 <button onclick="extract()">Extract DNA</button>
 <button onclick="generate()">Generate Variation</button>
-
+<button onclick="autoRemix()">🔥 Auto Remix</button>
+  
 <br><br>
 
 <!-- 🚀 NEW ACTIONS -->
@@ -160,6 +161,44 @@ async function generate() {
   }
 }
 
+ async function autoRemix() {
+  try {
+    if (!currentDNA) {
+      alert("תעשה Extract קודם");
+      return;
+    }
+
+    const similarity = document.getElementById("similarity").value;
+
+    document.getElementById("result").innerText = "Generating Auto Remix...";
+
+    const res = await fetch("/api/variation/auto-remix", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        dna: currentDNA,
+        similarity: Number(similarity),
+        type: currentMode
+      })
+    });
+
+    const data = await res.json();
+
+    lastPrompt = data.best.production_prompt;
+
+    document.getElementById("result").innerText =
+      "🏆 BEST VERSION:\n" +
+      JSON.stringify(data.best, null, 2) +
+      "\n\n🔥 ALL VARIATIONS:\n" +
+      JSON.stringify(data.all, null, 2);
+
+  } catch {
+    document.getElementById("result").innerText = "Auto Remix Error ❌";
+  }
+}
+  
 // 📋 COPY
 function copyPrompt() {
   if (!lastPrompt) {
