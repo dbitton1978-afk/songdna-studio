@@ -5,77 +5,11 @@
   <title>SongDNA Studio</title>
 
   <style>
-    body {
-      font-family: Arial;
-      background: #111;
-      color: white;
-      text-align: center;
-      margin: 0;
-      padding: 30px;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 10px 15px;
-      margin: 5px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .primary { background: #4CAF50; color: white; }
-    .secondary { background: #333; color: white; }
-    .danger { background: #ff4444; color: white; }
-
-    .card-container {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 20px;
-    }
-
-    .card {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 15px;
-      width: 280px;
-      text-align: left;
-      border: 2px solid transparent;
-      transition: 0.2s;
-    }
-
-    .card:hover {
-      border-color: #4CAF50;
-      transform: scale(1.02);
-    }
-
-    .selected {
-      border-color: #4CAF50;
-    }
-
-    .score {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #4CAF50;
-    }
-
-    .actions {
-      margin-top: 10px;
-    }
-
-    .top-controls {
-      margin-bottom: 20px;
-    }
-
-    input[type="range"] {
-      width: 300px;
-    }
+    body { font-family: Arial; background:#111; color:white; text-align:center; padding:20px; }
+    button { padding:10px; margin:5px; border-radius:8px; border:none; cursor:pointer; }
+    .card-container { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .card { background:#1a1a1a; padding:15px; border-radius:10px; width:260px; }
+    .selected { border:2px solid #4CAF50; }
   </style>
 </head>
 
@@ -85,34 +19,25 @@
 
 <input type="file" id="fileInput"><br><br>
 
-<div class="top-controls">
-  <button onclick="setMode('club')" class="secondary">Club 🔥</button>
-  <button onclick="setMode('viral')" class="secondary">Viral 🚀</button>
-  <button onclick="setMode('emotional')" class="secondary">Emotional ❤️</button>
-  <button onclick="setMode('aggressive')" class="secondary">Aggressive ⚡</button>
+<button onclick="upload()">Upload</button>
+<button onclick="extract()">Extract DNA</button>
+<button onclick="autoRemix()">🔥 Auto Remix</button>
 
-  <br><br>
+<br><br>
 
-  <label>Similarity: <span id="simValue">60</span>%</label><br>
-  <input type="range" min="20" max="90" value="60" id="similarity" oninput="updateSim()">
-</div>
+<label>Similarity: <span id="simValue">60</span>%</label><br>
+<input type="range" id="similarity" min="20" max="90" value="60" oninput="updateSim()">
 
-<button class="primary" onclick="upload()">Upload</button>
-<button class="primary" onclick="extract()">Extract DNA</button>
-<button class="primary" onclick="autoRemix()">🔥 Auto Remix</button>
+<br><br>
 
-<div class="card-container" id="cards"></div>
+<div id="cards" class="card-container"></div>
 
 <script>
+let lastFileUrl = "";
 let currentDNA = null;
-let currentMode = "club";
 let variations = [];
-let selectedIndex = 0;
 
-function setMode(mode) {
-  currentMode = mode;
-}
-
+// ----------------
 function updateSim() {
   document.getElementById("simValue").innerText =
     document.getElementById("similarity").value;
@@ -121,56 +46,82 @@ function updateSim() {
 // ----------------
 // Upload
 async function upload() {
-  const file = document.getElementById("fileInput").files[0];
-  if (!file) return alert("בחר קובץ");
+  try {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return alert("בחר קובץ");
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  await fetch("/api/upload", {
-    method: "POST",
-    body: formData
-  });
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    });
 
-  alert("Uploaded ✔");
+    const data = await res.json();
+    lastFileUrl = data.fileUrl;
+
+    alert("Upload OK ✔");
+
+  } catch (err) {
+    alert("Upload Error ❌");
+  }
 }
 
 // ----------------
-// Extract
+// Extract DNA
 async function extract() {
-  const res = await fetch("/api/dna/extract", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({})
-  });
+  try {
+    if (!lastFileUrl) return alert("תעלה קובץ קודם");
 
-  const data = await res.json();
-  currentDNA = data.dna;
+    const res = await fetch("/api/dna/extract", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ fileUrl: lastFileUrl })
+    });
 
-  alert("DNA Ready ✔");
+    const data = await res.json();
+
+    if (!data.success) return alert("DNA Error");
+
+    currentDNA = data.dna;
+
+    alert("DNA Ready ✔");
+
+  } catch {
+    alert("DNA Error ❌");
+  }
 }
 
 // ----------------
 // AUTO REMIX
 async function autoRemix() {
-  if (!currentDNA) return alert("Extract קודם");
+  try {
+    if (!currentDNA) return alert("Extract קודם");
 
-  const similarity = document.getElementById("similarity").value;
+    const similarity = document.getElementById("similarity").value;
 
-  const res = await fetch("/api/variation/auto-remix", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      dna: currentDNA,
-      similarity: Number(similarity),
-      type: currentMode
-    })
-  });
+    const res = await fetch("/api/variation/auto-remix", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        dna: currentDNA,
+        similarity: Number(similarity),
+        type: "club"
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  variations = data.all;
-  renderCards();
+    if (!data.success) return alert("Error");
+
+    variations = data.all;
+
+    renderCards();
+
+  } catch {
+    alert("Auto Remix Error ❌");
+  }
 }
 
 // ----------------
@@ -183,20 +134,13 @@ function renderCards() {
     const card = document.createElement("div");
     card.className = "card";
 
-    if (i == selectedIndex) card.classList.add("selected");
-
     card.innerHTML = `
-      <div class="score">⭐ Score: ${v.score || "-"}</div>
+      <h3>Variation ${i+1}</h3>
+      <p>Score: ${v.score || "-"}</p>
+      <p>BPM: ${v.newDNA?.bpm || "-"}</p>
 
-      <div><b>BPM:</b> ${v.newDNA?.bpm || "-"}</div>
-      <div><b>Energy:</b> ${v.newDNA?.club_energy || "-"}</div>
-      <div><b>Emotion:</b> ${v.newDNA?.emotion_score || "-"}</div>
-
-      <div class="actions">
-        <button onclick="selectCard(${i})">Select</button>
-        <button onclick="copyPrompt(${i})">📋 Copy</button>
-        <button onclick="openSuno(${i})">🎵 Suno</button>
-      </div>
+      <button onclick="copyPrompt(${i})">📋 Copy</button>
+      <button onclick="openSuno()">🎵 Suno</button>
     `;
 
     container.appendChild(card);
@@ -204,14 +148,7 @@ function renderCards() {
 }
 
 // ----------------
-// Select
-function selectCard(i) {
-  selectedIndex = i;
-  renderCards();
-}
-
-// ----------------
-// Copy
+// Copy Prompt
 function copyPrompt(i) {
   const prompt = variations[i].production_prompt;
   navigator.clipboard.writeText(prompt);
@@ -219,8 +156,8 @@ function copyPrompt(i) {
 }
 
 // ----------------
-// Suno
-function openSuno(i) {
+// Open Suno
+function openSuno() {
   window.open("https://app.suno.ai/", "_blank");
 }
 </script>
