@@ -4,62 +4,25 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// 🔥 יצירת וריאציה אחת
 export async function generateVariation(originalDNA, similarity = 60, type = "club") {
   try {
     const prompt = `
-You are a world-class electronic music producer and sound designer.
+You are a world-class electronic music producer.
 
-You receive a track DNA (structure, groove, BPM, energy etc).
-Your job is to create a NEW variation that keeps the identity but improves it into a CLUB HIT.
+Create ONE improved variation based on the DNA.
 
-GOALS:
-- Stronger groove and rhythm movement
-- More dynamic energy curve
-- A powerful drop
-- A memorable hook (2–4 notes)
-- Professional DJ structure (intro / build / drop / break / drop / outro)
+Mode: ${type}
+Similarity: ${similarity}
 
-STYLE:
-- Variation type: ${type}
-- Similarity level: ${similarity}%
-- Keep identity but upgrade it
-
-RETURN STRICT JSON:
-
+Return STRICT JSON:
 {
-  "newDNA": {
-    "bpm": number,
-    "groove": {
-      "swing": number,
-      "bounce": number,
-      "drive": number
-    },
-    "energy_curve": [number, number, number, number, number],
-    "drums": {
-      "kick": string,
-      "clap": string,
-      "hihat": string
-    },
-    "bass": {
-      "type": string,
-      "movement": string
-    },
-    "melody": {
-      "contour": string,
-      "density": string,
-      "hook": string
-    },
-    "harmony": string,
-    "structure": [string],
-    "sound_palette": [string],
-    "vocal_presence": string,
-    "club_energy": number,
-    "emotion_score": number
-  },
-  "production_prompt": string
+  "newDNA": {...},
+  "production_prompt": string,
+  "score": number (0-100, how good this version is for club impact)
 }
 
-Track DNA:
+DNA:
 ${JSON.stringify(originalDNA)}
 `;
 
@@ -69,7 +32,6 @@ ${JSON.stringify(originalDNA)}
     });
 
     let text = response.output[0].content[0].text;
-
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
@@ -77,34 +39,35 @@ ${JSON.stringify(originalDNA)}
     return {
       success: true,
       ...parsed,
-      similarity_score: (similarity / 100).toFixed(2),
     };
 
   } catch (error) {
-    console.error("❌ AI ERROR:", error.message);
+    console.error("AI ERROR:", error.message);
 
     return {
       success: true,
-      newDNA: {
-        ...originalDNA,
-        bpm: originalDNA.bpm + Math.floor(Math.random() * 6 - 3),
-        groove: {
-          swing: Number(Math.random().toFixed(2)),
-          bounce: Number(Math.random().toFixed(2)),
-          drive: Number(Math.random().toFixed(2)),
-        },
-        energy_curve: [
-          Number(Math.random().toFixed(2)),
-          Number(Math.random().toFixed(2)),
-          Number(Math.random().toFixed(2)),
-          Number(Math.random().toFixed(2)),
-          Number(Math.random().toFixed(2)),
-        ],
-        club_energy: Math.floor(Math.random() * 100),
-        emotion_score: Math.floor(Math.random() * 100),
-      },
-      production_prompt: "Fallback variation (AI failed)",
-      similarity_score: "0",
+      newDNA: originalDNA,
+      production_prompt: "Fallback",
+      score: 0,
     };
   }
+}
+
+// 🔥🔥🔥 AUTO REMIX (כמה וריאציות)
+export async function generateAutoRemix(originalDNA, similarity, type) {
+  const results = [];
+
+  for (let i = 0; i < 3; i++) {
+    const variation = await generateVariation(originalDNA, similarity, type);
+    results.push(variation);
+  }
+
+  // 🔥 מיון לפי score
+  results.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  return {
+    success: true,
+    best: results[0],
+    all: results
+  };
 }
