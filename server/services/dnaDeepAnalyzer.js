@@ -7,16 +7,19 @@ const client = new OpenAI({
 export async function deepAnalyzeDNA(originalDNA) {
   try {
     const prompt = `
-You are an elite music producer and sound engineer.
+You are an elite music producer, arranger, and sound designer.
 
-Your task is to deeply analyze a track DNA and break it down into a FULL production blueprint.
+Your task is to convert the provided track DNA into a DEEP PRODUCTION BLUEPRINT.
 
-Think like a professional producer recreating the track from scratch.
+Think like a producer recreating the track from scratch as accurately as possible.
 
-OUTPUT MUST BE EXTREMELY DETAILED.
+CRITICAL RULES:
+- Preserve the original musical identity
+- Do not generalize to broad genres like "electronic dance" if a more precise style is possible
+- Be specific and technical
+- Describe rhythm, arrangement, sound design, and feel like a real producer
 
-----------------------------------
-RETURN STRICT JSON:
+RETURN STRICT JSON ONLY:
 
 {
   "genre": string,
@@ -32,6 +35,7 @@ RETURN STRICT JSON:
     "kick_pattern": string,
     "snare_clap_pattern": string,
     "hihat_pattern": string,
+    "percussion_pattern": string,
     "rhythm_density": string
   },
 
@@ -39,14 +43,22 @@ RETURN STRICT JSON:
     "pattern": string,
     "rhythm": string,
     "syncopation": string,
-    "sound_type": string
+    "sound_type": string,
+    "movement": string
   },
 
   "melody": {
     "scale_feel": string,
     "movement": string,
     "density": string,
-    "hook_style": string
+    "hook_style": string,
+    "lead_character": string
+  },
+
+  "harmony": {
+    "mood": string,
+    "chord_feel": string,
+    "tension_release": string
   },
 
   "arrangement": {
@@ -54,11 +66,13 @@ RETURN STRICT JSON:
     "build_bars": number,
     "drop_bars": number,
     "break_bars": number,
+    "outro_bars": number,
     "structure_flow": string
   },
 
   "sound_design": {
     "lead_type": string,
+    "bass_texture": string,
     "pad_type": string,
     "fx_elements": string,
     "texture": string
@@ -66,7 +80,8 @@ RETURN STRICT JSON:
 
   "energy": {
     "curve": string,
-    "peak_moments": string
+    "peak_moments": string,
+    "club_feel": string
   },
 
   "vocal": {
@@ -74,20 +89,24 @@ RETURN STRICT JSON:
     "style": string
   },
 
-  "rebuild_prompt": "FULL PROFESSIONAL TRACK CREATION PROMPT FOR SUNO"
+  "rebuild_prompt": string
 }
 
-----------------------------------
-
 IMPORTANT:
-- Be extremely specific
-- Use producer terminology
-- Describe rhythm patterns clearly
-- Describe groove feel
-- Describe timing and movement
-- The rebuild_prompt must be usable directly in Suno
+The "rebuild_prompt" must be a FULL Suno-ready prompt.
+It must include:
+- exact genre/subgenre
+- BPM
+- groove
+- kick/drums feel
+- bassline movement
+- melodic character
+- harmony mood
+- arrangement flow
+- sound design cues
+- whether vocals exist or not
 
-----------------------------------
+Write "rebuild_prompt" as one strong paragraph that Suno can use directly.
 
 INPUT DNA:
 ${JSON.stringify(originalDNA)}
@@ -98,13 +117,21 @@ ${JSON.stringify(originalDNA)}
       input: prompt,
     });
 
-    let text = response.output[0].content[0].text;
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    let text =
+      response?.output?.[0]?.content?.[0]?.text ||
+      response?.output_text ||
+      "";
+
+    text = String(text)
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
     return JSON.parse(text);
-
   } catch (error) {
     console.error("❌ DEEP ANALYSIS ERROR:", error.message);
-    return { error: "deep analysis failed" };
+    return {
+      error: "deep analysis failed",
+    };
   }
 }
