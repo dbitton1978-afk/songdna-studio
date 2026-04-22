@@ -1,16 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>SongDNA Studio</title>
+<meta charset="UTF-8">
+<title>SongDNA Studio</title>
 
-  <style>
-    body { font-family: Arial; background:#111; color:white; text-align:center; padding:20px; }
-    button { padding:10px; margin:5px; border-radius:8px; border:none; cursor:pointer; }
-    .card-container { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-    .card { background:#1a1a1a; padding:15px; border-radius:10px; width:260px; }
-    .selected { border:2px solid #4CAF50; }
-  </style>
+<style>
+body {
+  font-family: Arial;
+  background:#111;
+  color:white;
+  text-align:center;
+  padding:20px;
+}
+
+button {
+  padding:10px;
+  margin:5px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+}
+
+.card-container {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.card {
+  background:#1a1a1a;
+  padding:15px;
+  border-radius:10px;
+  width:260px;
+}
+</style>
 </head>
 
 <body>
@@ -46,82 +70,74 @@ function updateSim() {
 // ----------------
 // Upload
 async function upload() {
-  try {
-    const file = document.getElementById("fileInput").files[0];
-    if (!file) return alert("בחר קובץ");
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return alert("בחר קובץ");
 
-    const formData = new FormData();
-    formData.append("file", file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData
-    });
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData
+  });
 
-    const data = await res.json();
-    lastFileUrl = data.fileUrl;
+  const data = await res.json();
 
-    alert("Upload OK ✔");
+  lastFileUrl = data.fileUrl;
 
-  } catch (err) {
-    alert("Upload Error ❌");
-  }
+  alert("Upload OK ✔");
 }
 
 // ----------------
 // Extract DNA
 async function extract() {
-  try {
-    if (!lastFileUrl) return alert("תעלה קובץ קודם");
+  if (!lastFileUrl) return alert("תעלה קובץ קודם");
 
-    const res = await fetch("/api/dna/extract", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ fileUrl: lastFileUrl })
-    });
+  const res = await fetch("/api/dna/extract", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ fileUrl: lastFileUrl })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!data.success) return alert("DNA Error");
-
-    currentDNA = data.dna;
-
-    alert("DNA Ready ✔");
-
-  } catch {
+  if (!data.success) {
     alert("DNA Error ❌");
+    return;
   }
+
+  currentDNA = data.dna;
+
+  alert("DNA Ready ✔");
 }
 
 // ----------------
 // AUTO REMIX
 async function autoRemix() {
-  try {
-    if (!currentDNA) return alert("Extract קודם");
+  if (!currentDNA) return alert("תעשה Extract קודם");
 
-    const similarity = document.getElementById("similarity").value;
+  const similarity = document.getElementById("similarity").value;
 
-    const res = await fetch("/api/variation/auto-remix", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        dna: currentDNA,
-        similarity: Number(similarity),
-        type: "club"
-      })
-    });
+  const res = await fetch("/api/variation/auto-remix", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      dna: currentDNA,
+      similarity: Number(similarity),
+      type: "club"
+    })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!data.success) return alert("Error");
-
-    variations = data.all;
-
-    renderCards();
-
-  } catch {
+  if (!data.success) {
     alert("Auto Remix Error ❌");
+    return;
   }
+
+  variations = data.all;
+
+  renderCards();
 }
 
 // ----------------
@@ -131,16 +147,17 @@ function renderCards() {
   container.innerHTML = "";
 
   variations.forEach((v, i) => {
+
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
       <h3>Variation ${i+1}</h3>
-      <p>Score: ${v.score || "-"}</p>
-      <p>BPM: ${v.newDNA?.bpm || "-"}</p>
+      <p><b>Score:</b> ${v.score || "-"}</p>
+      <p><b>BPM:</b> ${v.newDNA?.bpm || "-"}</p>
 
-      <button onclick="copyPrompt(${i})">📋 Copy</button>
-      <button onclick="openSuno()">🎵 Suno</button>
+      <button onclick="copyPrompt(${i})">📋 Copy Prompt</button>
+      <button onclick="openSuno(${i})">🎵 Open Suno</button>
     `;
 
     container.appendChild(card);
@@ -151,14 +168,31 @@ function renderCards() {
 // Copy Prompt
 function copyPrompt(i) {
   const prompt = variations[i].production_prompt;
+
+  if (!prompt) {
+    alert("אין פרומפט");
+    return;
+  }
+
   navigator.clipboard.writeText(prompt);
   alert("Copied ✔");
 }
 
 // ----------------
 // Open Suno
-function openSuno() {
+function openSuno(i) {
+  const prompt = variations[i].production_prompt;
+
+  if (!prompt) {
+    alert("אין פרומפט");
+    return;
+  }
+
   window.open("https://app.suno.ai/", "_blank");
+
+  setTimeout(() => {
+    alert("הדבק את הפרומפט ב-Suno 🎧");
+  }, 500);
 }
 </script>
 
