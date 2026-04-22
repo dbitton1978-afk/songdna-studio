@@ -11,6 +11,16 @@
 
 <input type="file" id="fileInput"><br><br>
 
+<!-- 🔥 בחירת מצב -->
+<select id="mode">
+  <option value="club">Club 🔥</option>
+  <option value="viral">Viral 🚀</option>
+  <option value="emotional">Emotional ❤️</option>
+  <option value="aggressive">Aggressive ⚡</option>
+</select>
+
+<br><br>
+
 <button onclick="upload()">Upload</button>
 <button onclick="extract()">Extract DNA</button>
 <button onclick="generate()">Generate Variation</button>
@@ -92,6 +102,8 @@ async function generate() {
 
     document.getElementById("result").innerText = "Generating...";
 
+    const mode = document.getElementById("mode").value;
+
     const res = await fetch("/api/variation/generate", {
       method: "POST",
       headers: {
@@ -100,7 +112,7 @@ async function generate() {
       body: JSON.stringify({
         dna: currentDNA,
         similarity: 60,
-        type: "club"
+        type: mode
       })
     });
 
