@@ -28,8 +28,6 @@
 
 <button onclick="upload()">Upload</button>
 <button onclick="extract()">Extract DNA</button>
-<button onclick="generate()">Generate Variation</button>
-<button onclick="autoRemix()">🔥 Auto Remix</button>
 <button onclick="blueprint()">🧠 DNA → Blueprint</button>
 
 <br><br>
@@ -42,16 +40,13 @@
 <script>
 let lastFileUrl = "";
 let currentDNA = null;
-let bestPrompt = "";
-let currentMode = "club";
-let currentBlueprint = null;
+let sunoPrompt = "";
 
+/* =========================================
+   🎚️ Slider
+========================================= */
 document.getElementById("similarity").oninput = function() {
   document.getElementById("simValue").innerText = this.value;
-};
-
-document.getElementById("mode").onchange = function() {
-  currentMode = this.value;
 };
 
 /* =========================================
@@ -60,6 +55,7 @@ document.getElementById("mode").onchange = function() {
 async function upload() {
   try {
     const file = document.getElementById("fileInput").files[0];
+
     if (!file) {
       alert("בחר קובץ קודם");
       return;
@@ -76,6 +72,7 @@ async function upload() {
     });
 
     const data = await res.json();
+
     lastFileUrl = data.fileUrl || "";
 
     document.getElementById("result").innerText =
@@ -115,8 +112,7 @@ async function extract() {
     }
 
     currentDNA = data.dna;
-    currentBlueprint = null;
-    bestPrompt = "";
+    sunoPrompt = "";
 
     document.getElementById("result").innerText =
       "DNA:\n" + JSON.stringify(data, null, 2);
@@ -128,95 +124,12 @@ async function extract() {
 }
 
 /* =========================================
-   ⚡ Generate Variation
-========================================= */
-async function generate() {
-  try {
-    if (!currentDNA) {
-      alert("תעשה Extract DNA קודם");
-      return;
-    }
-
-    document.getElementById("result").innerText = "Generating...";
-
-    const similarity = document.getElementById("similarity").value;
-
-    const res = await fetch("/api/variation/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        dna: currentDNA,
-        similarity: Number(similarity),
-        type: currentMode
-      })
-    });
-
-    const data = await res.json();
-
-    bestPrompt = data.production_prompt || "";
-    currentBlueprint = null;
-
-    document.getElementById("result").innerText =
-      "VARIATION:\n" + JSON.stringify(data, null, 2);
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("result").innerText = "Generate Error ❌";
-  }
-}
-
-/* =========================================
-   🔥 Auto Remix
-========================================= */
-async function autoRemix() {
-  try {
-    if (!currentDNA) {
-      alert("תעשה Extract קודם");
-      return;
-    }
-
-    const similarity = document.getElementById("similarity").value;
-
-    document.getElementById("result").innerText = "Generating Auto Remix...";
-
-    const res = await fetch("/api/variation/auto-remix", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        dna: currentDNA,
-        similarity: Number(similarity),
-        type: currentMode
-      })
-    });
-
-    const data = await res.json();
-
-    bestPrompt = data.best?.production_prompt || "";
-    currentBlueprint = null;
-
-    document.getElementById("result").innerText =
-      "🏆 BEST VERSION:\n" +
-      JSON.stringify(data.best, null, 2) +
-      "\n\n🔥 ALL VARIATIONS:\n" +
-      JSON.stringify(data.all, null, 2);
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("result").innerText = "Auto Remix Error ❌";
-  }
-}
-
-/* =========================================
-   🧠 DNA -> Blueprint
+   🧠 DNA → Blueprint
 ========================================= */
 async function blueprint() {
   try {
     if (!currentDNA) {
-      alert("תעשה Extract DNA קודם");
+      alert("תעשה Extract קודם");
       return;
     }
 
@@ -227,9 +140,7 @@ async function blueprint() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        dna: currentDNA
-      })
+      body: JSON.stringify({ dna: currentDNA })
     });
 
     const data = await res.json();
@@ -239,11 +150,13 @@ async function blueprint() {
       return;
     }
 
-    currentBlueprint = data.blueprint;
-    bestPrompt = data.blueprint?.rebuild_prompt || "";
+    sunoPrompt = data.sunoPrompt || "";
 
     document.getElementById("result").innerText =
-      "BLUEPRINT:\n" + JSON.stringify(data.blueprint, null, 2);
+      "BLUEPRINT:\n" +
+      JSON.stringify(data.blueprint, null, 2) +
+      "\n\n🎧 SUNO PROMPT:\n" +
+      sunoPrompt;
 
   } catch (err) {
     console.error(err);
@@ -252,24 +165,24 @@ async function blueprint() {
 }
 
 /* =========================================
-   📋 Copy Prompt
+   📋 Copy
 ========================================= */
 function copyPrompt() {
-  if (!bestPrompt) {
-    alert("אין Prompt עדיין");
+  if (!sunoPrompt) {
+    alert("אין prompt עדיין");
     return;
   }
 
-  navigator.clipboard.writeText(bestPrompt);
-  alert("Copied!");
+  navigator.clipboard.writeText(sunoPrompt);
+  alert("Copied ✔");
 }
 
 /* =========================================
-   🎵 Open Suno
+   🎵 Suno
 ========================================= */
 function openSuno() {
-  if (!bestPrompt) {
-    alert("אין Prompt עדיין");
+  if (!sunoPrompt) {
+    alert("אין prompt עדיין");
     return;
   }
 
