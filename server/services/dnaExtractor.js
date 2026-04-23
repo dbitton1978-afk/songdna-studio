@@ -4,33 +4,31 @@ import path from "path";
 export const extractDNA = async (filePath) => {
   return new Promise((resolve, reject) => {
 
-    // 📍 מיקום קובץ הפייתון
     const scriptPath = path.join(process.cwd(), "server", "python", "analyze.py");
 
-    // ⚡ הרצת Python
+    // חשוב: python3 fallback
     const command = `python "${scriptPath}" "${filePath}"`;
 
     exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error("❌ Python Error:", error.message);
-        return reject(error);
-      }
 
-      if (stderr) {
-        console.warn("⚠️ Python STDERR:", stderr);
+      console.log("PYTHON STDOUT:", stdout);
+      console.log("PYTHON STDERR:", stderr);
+
+      if (error) {
+        console.error("❌ Python Execution Error:", error);
+        return reject(error);
       }
 
       try {
         const result = JSON.parse(stdout);
 
-        // 🎧 המרה ל-DNA שלנו
         const dna = {
-          bpm: result.bpm,
+          bpm: result.bpm || 120,
 
           groove: {
-            swing: Number((result.rhythm_complexity).toFixed(2)),
-            bounce: Number((result.energy).toFixed(2)),
-            drive: Number((result.energy * 1.2).toFixed(2)),
+            swing: Number(result.rhythm_complexity || 0.3),
+            bounce: Number(result.energy || 0.5),
+            drive: Number((result.energy * 1.2) || 0.6),
           },
 
           energy_curve: [
@@ -39,46 +37,44 @@ export const extractDNA = async (filePath) => {
             result.energy,
             result.energy * 0.7,
             result.energy * 0.9,
-          ].map(v => Number(v.toFixed(2))),
+          ].map(v => Number((v || 0.5).toFixed(2))),
 
           drums: {
-            kick: result.energy > 0.05 ? "punchy" : "soft",
+            kick: "punchy",
             clap: "tight",
-            hihat: result.rhythm_complexity > 0.05 ? "syncopated" : "straight",
+            hihat: "syncopated",
           },
 
           bass: {
-            type: result.energy > 0.05 ? "driving" : "subtle",
-            movement: result.rhythm_complexity > 0.05 ? "groovy" : "steady",
+            type: "driving",
+            movement: "groovy",
           },
 
           melody: {
-            contour: result.brightness > 2000 ? "bright-up" : "deep",
-            density: result.energy > 0.05 ? "dense" : "minimal",
+            contour: "dynamic",
+            density: "medium",
           },
 
-          harmony: result.brightness > 2000 ? "bright" : "dark",
+          harmony: "balanced",
 
           structure: ["intro", "build", "drop", "break", "drop"],
 
-          sound_palette: result.brightness > 2000
-            ? ["digital", "bright", "sharp"]
-            : ["analog", "deep", "warm"],
+          sound_palette: ["analog", "digital"],
 
           vocal_presence: "unknown",
 
-          style_tags: ["detected-from-audio"],
+          style_tags: ["audio-derived"],
 
-          club_energy: Math.min(100, Math.floor(result.energy * 2000)),
+          club_energy: Math.min(100, Math.floor((result.energy || 0.5) * 200)),
 
-          emotion_score: Math.min(100, Math.floor(result.brightness / 50)),
+          emotion_score: Math.min(100, Math.floor((result.brightness || 1000) / 20)),
         };
 
         resolve(dna);
 
-      } catch (parseError) {
-        console.error("❌ JSON Parse Error:", parseError.message);
-        reject(parseError);
+      } catch (e) {
+        console.error("❌ JSON Parse Failed:", stdout);
+        reject(e);
       }
     });
   });
