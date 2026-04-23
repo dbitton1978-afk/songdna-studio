@@ -2,11 +2,12 @@ import express from "express";
 import fs from "fs";
 import { extractDNA } from "../services/dnaExtractor.js";
 import { deepAnalyzeDNA } from "../services/dnaDeepAnalyzer.js";
+import { buildSunoPrompt } from "../services/sunoTranslator.js";
 
 const router = express.Router();
 
 /* =========================================
-   🎧 EXTRACT DNA FROM UPLOADED FILE
+   🎧 EXTRACT DNA
 ========================================= */
 router.post("/extract", async (req, res) => {
   try {
@@ -34,8 +35,10 @@ router.post("/extract", async (req, res) => {
       success: true,
       dna,
     });
+
   } catch (err) {
     console.error("DNA EXTRACT ERROR:", err.message);
+
     res.status(500).json({
       success: false,
       message: "DNA extraction failed",
@@ -44,7 +47,7 @@ router.post("/extract", async (req, res) => {
 });
 
 /* =========================================
-   🧠 DNA -> BLUEPRINT
+   🧠 DNA → BLUEPRINT → SUNO PROMPT
 ========================================= */
 router.post("/blueprint", async (req, res) => {
   try {
@@ -57,6 +60,7 @@ router.post("/blueprint", async (req, res) => {
       });
     }
 
+    // 🔬 שלב 1 — פירוק עמוק
     const blueprint = await deepAnalyzeDNA(dna);
 
     if (blueprint?.error) {
@@ -66,12 +70,18 @@ router.post("/blueprint", async (req, res) => {
       });
     }
 
+    // 🎧 שלב 2 — תרגום ל-Suno
+    const sunoPrompt = await buildSunoPrompt(blueprint);
+
     res.json({
       success: true,
       blueprint,
+      sunoPrompt,
     });
+
   } catch (err) {
     console.error("DNA BLUEPRINT ERROR:", err.message);
+
     res.status(500).json({
       success: false,
       message: "Blueprint generation failed",
