@@ -1,53 +1,88 @@
+import { exec } from "child_process";
+import path from "path";
+
+/* =========================================
+   🧠 REAL AUDIO DNA EXTRACTION (PYTHON)
+========================================= */
 export const extractDNA = async (filePath) => {
-  // כרגע זה MVP בסיסי (נחליף בהמשך ל-AI אמיתי)
+  return new Promise((resolve, reject) => {
 
-  const randomBpm = Math.floor(Math.random() * (135 - 110) + 110);
+    // 📁 נתיב ל-Python analyzer
+    const analyzerPath = path.resolve("server/audio/analyzer.py");
 
-  return {
-    bpm: randomBpm,
+    const command = `python "${analyzerPath}" "${filePath}"`;
 
-    groove: {
-      swing: Math.random().toFixed(2),
-      bounce: Math.random().toFixed(2),
-      drive: Math.random().toFixed(2),
-    },
+    exec(command, (error, stdout, stderr) => {
 
-    energy_curve: [
-      Math.random().toFixed(2),
-      Math.random().toFixed(2),
-      Math.random().toFixed(2),
-      Math.random().toFixed(2),
-      Math.random().toFixed(2),
-    ],
+      if (error) {
+        console.error("❌ PYTHON ERROR:", error.message);
+        return reject(error);
+      }
 
-    drums: {
-      kick: "punchy",
-      clap: "tight",
-      hihat: "offbeat",
-    },
+      if (stderr) {
+        console.error("⚠️ PYTHON STDERR:", stderr);
+      }
 
-    bass: {
-      type: "rolling",
-      movement: "groovy",
-    },
+      try {
+        const result = JSON.parse(stdout);
 
-    melody: {
-      contour: "up-down",
-      density: "medium",
-    },
+        /* =========================================
+           🎧 בניית DNA אמיתי מהנתונים
+        ========================================= */
 
-    harmony: "uplifting",
+        const dna = {
+          bpm: Math.round(result.bpm || 120),
 
-    structure: ["intro", "build", "drop", "break", "drop"],
+          groove: {
+            swing: Number(result.groove_density || 0.1).toFixed(2),
+            bounce: Number(result.groove_density * 1.2 || 0.2).toFixed(2),
+            drive: Number(result.groove_density * 1.5 || 0.3).toFixed(2),
+          },
 
-    sound_palette: ["analog", "airy"],
+          energy_curve: result.energy_curve || [0.2, 0.4, 0.6, 0.8, 1.0],
 
-    vocal_presence: "none",
+          drums: {
+            kick: result.bpm > 135 ? "fast punchy kick" : "steady club kick",
+            clap: "tight electronic clap",
+            hihat: "offbeat groove hihat",
+          },
 
-    style_tags: ["electronic"],
+          bass: {
+            type: result.bpm > 135 ? "rolling psy bass" : "groovy house bass",
+            movement: result.groove_density > 0.1 ? "syncopated" : "straight",
+          },
 
-    club_energy: Math.floor(Math.random() * 100),
+          melody: {
+            contour: result.brightness > 3000 ? "sharp energetic" : "smooth melodic",
+            density: result.beat_count > 200 ? "dense" : "medium",
+          },
 
-    emotion_score: Math.floor(Math.random() * 100),
-  };
+          harmony: result.brightness > 3000 ? "bright uplifting" : "deep emotional",
+
+          structure: ["intro", "build", "drop", "break", "drop"],
+
+          sound_palette: result.brightness > 3000
+            ? ["digital", "bright", "aggressive"]
+            : ["analog", "warm", "deep"],
+
+          vocal_presence: "none",
+
+          style_tags: [
+            result.bpm > 135 ? "trance" : "house",
+            result.groove_density > 0.1 ? "groovy" : "driving"
+          ],
+
+          club_energy: Math.min(100, Math.floor(result.brightness / 100)),
+
+          emotion_score: Math.min(100, Math.floor(result.energy_curve[4] * 100)),
+        };
+
+        resolve(dna);
+
+      } catch (parseError) {
+        console.error("❌ JSON PARSE ERROR:", parseError.message);
+        reject(parseError);
+      }
+    });
+  });
 };
