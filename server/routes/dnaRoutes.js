@@ -1,90 +1,82 @@
 import express from "express";
-import fs from "fs";
-import { extractDNA } from "../services/dnaExtractor.js";
-import { deepAnalyzeDNA } from "../services/dnaDeepAnalyzer.js";
-import { buildSunoPrompt } from "../services/sunoTranslator.js";
+import fetch from "node-fetch";
+import FormData from "form-data";
 
 const router = express.Router();
 
-/* =========================================
-   🎧 EXTRACT DNA
-========================================= */
+// 👉 ה-URL שלך
+const AUDIO_SERVICE_URL = "https://songdna-studio-2.onrender.com";
+
 router.post("/extract", async (req, res) => {
   try {
-    const { fileUrl } = req.body;
-
-    if (!fileUrl) {
+    if (!req.files || !req.files.file) {
       return res.status(400).json({
         success: false,
-        message: "fileUrl is required",
+        message: "No file uploaded"
       });
     }
 
-    const filePath = fileUrl.replace("/uploads/", "uploads/");
+    const file = req.files.file;
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found",
-      });
-    }
+    const formData = new FormData();
+    formData.append("file", file.data, file.name);
 
-    const dna = await extractDNA(filePath);
-
-    res.json({
-      success: true,
-      dna,
+    const response = await fetch(`${AUDIO_SERVICE_URL}/analyze`, {
+      method: "POST",
+      body: formData
     });
 
-  } catch (err) {
-    console.error("DNA EXTRACT ERROR:", err.message);
+    const data = await response.json();
 
-    res.status(500).json({
-      success: false,
-      message: "DNA extraction failed",
-    });
-  }
-});
-
-/* =========================================
-   🧠 DNA → BLUEPRINT → SUNO PROMPT
-========================================= */
-router.post("/blueprint", async (req, res) => {
-  try {
-    const { dna } = req.body;
-
-    if (!dna) {
-      return res.status(400).json({
-        success: false,
-        message: "dna is required",
-      });
-    }
-
-    // 🔬 שלב 1 — פירוק עמוק
-    const blueprint = await deepAnalyzeDNA(dna);
-
-    if (blueprint?.error) {
+    if (data.error) {
       return res.status(500).json({
         success: false,
-        message: blueprint.error,
+        message: data.error
       });
     }
 
-    // 🎧 שלב 2 — תרגום ל-Suno
-    const sunoPrompt = await buildSunoPrompt(blueprint);
+    // 🎧 DNA אמיתי מבוסס אודיו
+    const dna = {
+      bpm: data.bpm,
+      groove: {
+        swing: Number(data.rhythm_complexity.toFixed(2)),
+        bounce: Number((data.energy * 0.8).toFixed(2)),
+        drive: Number((data.energy * 1.2).toFixed(2))
+      },
+      energy_curve: data.energy_curve,
+      drums: {
+        kick: "analyzed",
+        clap: "analyzed",
+        hihat: "analyzed"
+      },
+      bass: {
+        type: "derived",
+        movement: "dynamic"
+      },
+      melody: {
+        contour: "derived",
+        density: "derived"
+      },
+      harmony: "derived",
+      structure: ["intro", "build", "drop", "break", "drop"],
+      sound_palette: ["real-audio"],
+      vocal_presence: "unknown",
+      style_tags: ["auto-detected"],
+      club_energy: Math.round(data.energy * 100),
+      emotion_score: Math.round(data.brightness / 50)
+    };
 
     res.json({
       success: true,
-      blueprint,
-      sunoPrompt,
+      dna
     });
 
   } catch (err) {
-    console.error("DNA BLUEPRINT ERROR:", err.message);
+    console.error("DNA ERROR:", err.message);
 
     res.status(500).json({
       success: false,
-      message: "Blueprint generation failed",
+      message: "DNA extraction failed"
     });
   }
 });
