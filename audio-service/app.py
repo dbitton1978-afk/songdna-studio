@@ -6,6 +6,12 @@ import os
 
 app = Flask(__name__)
 
+# 👉 בדיקה פשוטה
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"status": "audio-service alive 🚀"})
+
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
