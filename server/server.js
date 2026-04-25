@@ -1,26 +1,31 @@
 import express from "express";
-import cors from "cors";
-import uploadRoutes from "./routes/uploadRoutes.js";
+import fileUpload from "express-fileupload";
 import dnaRoutes from "./routes/dnaRoutes.js";
 import variationRoutes from "./routes/variationRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
-app.use(cors());
+// 🔥 חובה בשביל קבצים
+app.use(fileUpload());
+
+// JSON
 app.use(express.json());
 
-app.use(express.static("public"));
-app.use("/uploads", express.static("uploads"));
-
-app.use("/api/upload", uploadRoutes);
+// Routes
 app.use("/api/dna", dnaRoutes);
 app.use("/api/variation", variationRoutes);
+app.use("/api/upload", uploadRoutes);
 
-app.get("/health", (req, res) => {
-  res.json({ success: true });
+// Serve UI
+app.use(express.static("public"));
+
+// Health check
+app.get("/", (req, res) => {
+  res.send("SongDNA API is running 🚀");
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
